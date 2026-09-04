@@ -41,7 +41,7 @@ import type {
 
 type Notice = { message: string; tone: "success" | "neutral" } | null;
 
-const CURRENT_KEY = "constellation-invoice:v1:current";
+const CURRENT_KEY = "constellation-invoice:v2:current";
 const LIBRARY_KEY = "constellation-invoice:v1:library";
 const A4_PREVIEW_WIDTH = 720;
 
@@ -76,20 +76,18 @@ function createInitialQuote(today: string, sequence = 1): Quote {
     issueDate: today,
     validUntil: addDays(today, 15),
     currency: "USD",
-    title: "Identité de marque & présence digitale",
-    introduction: "Une proposition pensée pour donner à votre marque une identité claire, cohérente et prête à rayonner.",
-    client: { company: "Client exemple", name: "Nom du contact", email: "contact@client.com", phone: "+243 …", address: "Ville, pays" },
-    sender: { company: "CONSTELLATION", name: "Votre nom", email: "Votre e-mail", phone: "Votre téléphone", address: "Votre adresse", taxId: "Identifiant fiscal (optionnel)" },
+    title: "",
+    introduction: "",
+    client: { company: "", name: "", email: "", phone: "", address: "" },
+    sender: { company: "CONSTELLATION", name: "", email: "", phone: "", address: "", taxId: "" },
     items: [
-      { id: "line-brand", description: "Direction artistique & identité visuelle", details: "Univers graphique, logo principal et déclinaisons essentielles", quantity: 1, unitPrice: 850 },
-      { id: "line-web", description: "Site vitrine sur mesure", details: "Conception responsive, intégration et mise en ligne", quantity: 1, unitPrice: 1450 },
-      { id: "line-launch", description: "Kit de lancement digital", details: "Templates sociaux et supports de présentation", quantity: 1, unitPrice: 420 },
+      { id: "line-1", description: "", details: "", quantity: 1, unitPrice: 0 },
     ],
     discount: 0,
     tax: 0,
-    deposit: 50,
-    paymentTerms: "Acompte à la validation, solde à la livraison.",
-    notes: "Ce devis comprend deux séries d’ajustements. Toute demande hors périmètre fera l’objet d’une estimation complémentaire.",
+    deposit: 0,
+    paymentTerms: "",
+    notes: "",
     updatedAt: new Date(`${today}T12:00:00`).toISOString(),
   };
 }
@@ -253,7 +251,7 @@ export function QuoteStudio({ today }: { today: string }) {
   }
 
   function addItem() {
-    setQuote((current) => ({ ...current, items: [...current.items, { id: makeId("line"), description: "Nouvelle prestation", details: "Décrivez ce qui est inclus", quantity: 1, unitPrice: 0 }], updatedAt: new Date().toISOString() }));
+    setQuote((current) => ({ ...current, items: [...current.items, { id: makeId("line"), description: "", details: "", quantity: 1, unitPrice: 0 }], updatedAt: new Date().toISOString() }));
   }
 
   function removeItem(id: string) {
@@ -352,18 +350,18 @@ export function QuoteStudio({ today }: { today: string }) {
             <Field label="Statut"><span className="select-wrap"><select value={quote.status} onChange={(event) => patchQuote("status", event.target.value as QuoteStatus)}><option>Brouillon</option><option>Prêt à envoyer</option><option>Envoyé</option><option>Accepté</option></select><ChevronDown size={15} aria-hidden="true" /></span></Field>
             <Field label="Date d’émission"><input type="date" value={quote.issueDate} onChange={(event) => patchQuote("issueDate", event.target.value)} /></Field>
             <Field label="Valable jusqu’au"><input type="date" value={quote.validUntil} onChange={(event) => patchQuote("validUntil", event.target.value)} /></Field>
-            <Field label="Objet de la proposition" wide><input value={quote.title} onChange={(event) => patchQuote("title", event.target.value)} /></Field>
-            <Field label="Phrase d’introduction" wide><textarea rows={3} value={quote.introduction} onChange={(event) => patchQuote("introduction", event.target.value)} /></Field>
+            <Field label="Objet de la proposition" wide><input placeholder="Ex. Pose de peinture dans trois pièces" value={quote.title} onChange={(event) => patchQuote("title", event.target.value)} /></Field>
+            <Field label="Phrase d’introduction" wide><textarea rows={3} placeholder="Présentez brièvement le besoin du client et votre proposition." value={quote.introduction} onChange={(event) => patchQuote("introduction", event.target.value)} /></Field>
           </div>
         </div>
         <div className="form-card">
           <div className="form-card-heading"><h2>Destinataire</h2><span>La personne qui recevra ce devis</span></div>
           <div className="field-grid">
-            <Field label="Entreprise"><input value={quote.client.company} onChange={(event) => patchParty("client", "company", event.target.value)} /></Field>
-            <Field label="Nom du contact"><input value={quote.client.name} onChange={(event) => patchParty("client", "name", event.target.value)} /></Field>
-            <Field label="E-mail"><input type="email" value={quote.client.email} onChange={(event) => patchParty("client", "email", event.target.value)} /></Field>
-            <Field label="Téléphone"><input inputMode="tel" value={quote.client.phone} onChange={(event) => patchParty("client", "phone", event.target.value)} /></Field>
-            <Field label="Adresse" wide><input value={quote.client.address} onChange={(event) => patchParty("client", "address", event.target.value)} /></Field>
+            <Field label="Entreprise"><input placeholder="Nom de l’entreprise ou du client" value={quote.client.company} onChange={(event) => patchParty("client", "company", event.target.value)} /></Field>
+            <Field label="Nom du contact"><input placeholder="Nom de la personne à contacter" value={quote.client.name} onChange={(event) => patchParty("client", "name", event.target.value)} /></Field>
+            <Field label="E-mail"><input type="email" placeholder="client@exemple.com" value={quote.client.email} onChange={(event) => patchParty("client", "email", event.target.value)} /></Field>
+            <Field label="Téléphone"><input inputMode="tel" placeholder="Ex. +243 000 000 000" value={quote.client.phone} onChange={(event) => patchParty("client", "phone", event.target.value)} /></Field>
+            <Field label="Adresse" wide><input placeholder="Ville, commune ou adresse complète" value={quote.client.address} onChange={(event) => patchParty("client", "address", event.target.value)} /></Field>
           </div>
         </div>
         <button className="button button--next" type="button" onClick={() => goToSection("prestations")}>Continuer vers les prestations <span>→</span></button>
@@ -379,8 +377,8 @@ export function QuoteStudio({ today }: { today: string }) {
               <m.article className="line-editor" key={item.id} layout initial={{ opacity: 0, height: 0, y: 12 }} animate={{ opacity: 1, height: "auto", y: 0 }} exit={{ opacity: 0, height: 0, y: -8 }} transition={{ duration: 0.24 }}>
                 <div className="line-editor-top"><span className="line-number">{String(index + 1).padStart(2, "0")}</span><strong>Prestation</strong><button className="icon-button icon-button--danger" type="button" onClick={() => removeItem(item.id)} aria-label="Supprimer cette prestation"><Trash2 size={16} aria-hidden="true" /></button></div>
                 <div className="field-grid line-fields">
-                  <Field label="Intitulé" wide><input value={item.description} onChange={(event) => patchItem(item.id, "description", event.target.value)} /></Field>
-                  <Field label="Détails" wide><textarea rows={2} value={item.details} onChange={(event) => patchItem(item.id, "details", event.target.value)} /></Field>
+                  <Field label="Intitulé" wide><input placeholder="Ex. Peinture à huile 1 litre" value={item.description} onChange={(event) => patchItem(item.id, "description", event.target.value)} /></Field>
+                  <Field label="Détails" wide><textarea rows={2} placeholder="Précisez ce qui est inclus dans cette prestation." value={item.details} onChange={(event) => patchItem(item.id, "details", event.target.value)} /></Field>
                   <Field label="Quantité"><input type="number" inputMode="decimal" min="0" step="1" value={item.quantity} onChange={(event) => patchItem(item.id, "quantity", Number(event.target.value))} /></Field>
                   <Field label={`Prix unitaire (${quote.currency})`}><input type="number" inputMode="decimal" min="0" step="0.01" value={item.unitPrice} onChange={(event) => patchItem(item.id, "unitPrice", Number(event.target.value))} /></Field>
                 </div>
@@ -409,7 +407,7 @@ export function QuoteStudio({ today }: { today: string }) {
         </div>
         <div className="form-card">
           <div className="form-card-heading"><h2>Modalités</h2><span>Pour éviter les zones grises</span></div>
-          <div className="field-grid"><Field label="Conditions de paiement" wide><textarea rows={3} value={quote.paymentTerms} onChange={(event) => patchQuote("paymentTerms", event.target.value)} /></Field><Field label="Notes et périmètre" wide><textarea rows={5} value={quote.notes} onChange={(event) => patchQuote("notes", event.target.value)} /></Field></div>
+          <div className="field-grid"><Field label="Conditions de paiement" wide><textarea rows={3} placeholder="Ex. 50 % à la validation, solde à la livraison." value={quote.paymentTerms} onChange={(event) => patchQuote("paymentTerms", event.target.value)} /></Field><Field label="Notes et périmètre" wide><textarea rows={5} placeholder="Ajoutez uniquement les conditions particulières utiles à ce devis." value={quote.notes} onChange={(event) => patchQuote("notes", event.target.value)} /></Field></div>
         </div>
         <button className="button button--next" type="button" onClick={() => goToSection("emetteur")}>Finaliser les informations <span>→</span></button>
       </div>
@@ -422,11 +420,11 @@ export function QuoteStudio({ today }: { today: string }) {
           <div className="form-card-heading"><h2>Émetteur</h2><span>Visible en pied de page</span></div>
           <div className="field-grid">
             <Field label="Nom de l’entreprise"><input value={quote.sender.company} onChange={(event) => patchParty("sender", "company", event.target.value)} /></Field>
-            <Field label="Personne de contact"><input value={quote.sender.name} onChange={(event) => patchParty("sender", "name", event.target.value)} /></Field>
-            <Field label="E-mail"><input type="email" value={quote.sender.email} onChange={(event) => patchParty("sender", "email", event.target.value)} /></Field>
-            <Field label="Téléphone"><input inputMode="tel" value={quote.sender.phone} onChange={(event) => patchParty("sender", "phone", event.target.value)} /></Field>
-            <Field label="Adresse" wide><input value={quote.sender.address} onChange={(event) => patchParty("sender", "address", event.target.value)} /></Field>
-            <Field label="Identifiant fiscal" wide><input value={quote.sender.taxId} onChange={(event) => patchParty("sender", "taxId", event.target.value)} /></Field>
+            <Field label="Personne de contact"><input placeholder="Votre nom complet" value={quote.sender.name} onChange={(event) => patchParty("sender", "name", event.target.value)} /></Field>
+            <Field label="E-mail"><input type="email" placeholder="contact@constellation.cd" value={quote.sender.email} onChange={(event) => patchParty("sender", "email", event.target.value)} /></Field>
+            <Field label="Téléphone"><input inputMode="tel" placeholder="Ex. +243 000 000 000" value={quote.sender.phone} onChange={(event) => patchParty("sender", "phone", event.target.value)} /></Field>
+            <Field label="Adresse" wide><input placeholder="Adresse de Constellation" value={quote.sender.address} onChange={(event) => patchParty("sender", "address", event.target.value)} /></Field>
+            <Field label="Identifiant fiscal" wide><input placeholder="RCCM, ID Nat. ou NIF (optionnel)" value={quote.sender.taxId} onChange={(event) => patchParty("sender", "taxId", event.target.value)} /></Field>
           </div>
         </div>
         <div className="finish-card"><span className="finish-icon"><Check size={20} aria-hidden="true" /></span><div><strong>Votre devis est prêt.</strong><p>Enregistrez-le, exportez-le en PDF ou partagez un lien.</p></div><button className="button button--primary" type="button" onClick={saveToLibrary}><Save size={16} aria-hidden="true" /> Enregistrer</button></div>

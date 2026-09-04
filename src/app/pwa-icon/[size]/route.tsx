@@ -17,7 +17,7 @@ export async function GET(
       <div
         style={{
           alignItems: "center",
-          background: "linear-gradient(145deg, #11231d 0%, #203d33 100%)",
+          background: "linear-gradient(145deg, #07132e 0%, #102145 100%)",
           display: "flex",
           height: "100%",
           justifyContent: "center",
@@ -28,11 +28,11 @@ export async function GET(
         <div
           style={{
             alignItems: "center",
-            background: "#e67958",
-            border: `${Math.max(3, Math.round(size * 0.012))}px solid #f5b49d`,
+            background: "#f4c83f",
+            border: `${Math.max(3, Math.round(size * 0.012))}px solid #fff1a6`,
             borderRadius: "50%",
-            boxShadow: "0 24px 70px rgba(4, 13, 10, 0.42)",
-            color: "#fffaf3",
+            boxShadow: "0 24px 70px rgba(2, 7, 20, 0.46)",
+            color: "#07132e",
             display: "flex",
             fontFamily: "Georgia, serif",
             fontSize: Math.round(markSize * 0.5),
