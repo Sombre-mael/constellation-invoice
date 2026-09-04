@@ -1,7 +1,5 @@
 export type Currency = "USD" | "CDF" | "EUR";
 
-export type QuoteStatus = "Brouillon" | "Prêt à envoyer" | "Envoyé" | "Accepté";
-
 export type EditorSection = "client" | "prestations" | "conditions" | "emetteur";
 
 export type MobilePreviewMode = "readable" | "a4";
@@ -27,7 +25,6 @@ export type LineItem = {
 export type Quote = {
   id: string;
   quoteNumber: string;
-  status: QuoteStatus;
   issueDate: string;
   validUntil: string;
   currency: Currency;
@@ -36,6 +33,8 @@ export type Quote = {
   client: Party;
   sender: Party & { taxId: string };
   items: LineItem[];
+  laborCost: number;
+  serviceDuration: string;
   discount: number;
   tax: number;
   deposit: number;
@@ -45,6 +44,7 @@ export type Quote = {
 };
 
 export type QuoteTotals = {
+  itemsSubtotal: number;
   subtotal: number;
   discountAmount: number;
   taxAmount: number;

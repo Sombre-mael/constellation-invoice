@@ -47,7 +47,6 @@ export function QuoteDocument({
         <BrandLogo />
         <div className="quote-meta">
           <span className="quote-date">Le {formatDate(quote.issueDate, "numeric")}</span>
-          <span className="quote-status">{quote.status}</span>
           <small>DEVIS N°</small>
           <strong>{quote.quoteNumber}</strong>
         </div>
@@ -72,6 +71,7 @@ export function QuoteDocument({
           <span>CALENDRIER</span>
           <div><small>Émis le</small><strong>{formatDate(quote.issueDate)}</strong></div>
           <div><small>Valable jusqu’au</small><strong>{formatDate(quote.validUntil)}</strong></div>
+          <div><small>Durée prévue</small><strong>{quote.serviceDuration || "À préciser"}</strong></div>
         </div>
       </section>
 
@@ -91,6 +91,15 @@ export function QuoteDocument({
             <strong className="quote-line-total"><small>Prix total</small>{money.format(item.quantity * item.unitPrice)}</strong>
           </div>
         ))}
+        {quote.laborCost > 0 && (
+          <div className="quote-line quote-line--labor">
+            <span className="quote-line-index">MO</span>
+            <div className="quote-line-description"><strong>Main-d’œuvre</strong><p>Exécution du service</p></div>
+            <span className="quote-line-quantity"><small>Quantité</small>1</span>
+            <span className="quote-line-price"><small>Prix unitaire</small>{money.format(quote.laborCost)}</span>
+            <strong className="quote-line-total"><small>Prix total</small>{money.format(quote.laborCost)}</strong>
+          </div>
+        )}
       </section>
 
       <section className="quote-summary">
@@ -106,6 +115,8 @@ export function QuoteDocument({
         </div>
 
         <div className="totals-table">
+          {quote.laborCost > 0 && <p><span>Prestations</span><strong>{money.format(totals.itemsSubtotal)}</strong></p>}
+          {quote.laborCost > 0 && <p><span>Main-d’œuvre</span><strong>{money.format(quote.laborCost)}</strong></p>}
           <p><span>Sous-total</span><strong>{money.format(totals.subtotal)}</strong></p>
           {quote.discount > 0 && <p><span>Remise ({quote.discount}%)</span><strong>− {money.format(totals.discountAmount)}</strong></p>}
           {quote.tax > 0 && <p><span>Taxe / TVA ({quote.tax}%)</span><strong>{money.format(totals.taxAmount)}</strong></p>}

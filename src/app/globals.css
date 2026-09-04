@@ -803,17 +803,6 @@ textarea:focus-visible {
   margin-bottom: 3px;
 }
 
-.quote-status {
-  background: var(--brand-gold-soft);
-  border-radius: 999px;
-  color: #735600;
-  font-size: 7px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 4px 8px;
-  text-transform: uppercase;
-}
-
 .quote-hero {
   background:
     radial-gradient(circle at 100% 0%, rgba(244, 200, 63, 0.2), transparent 38%),
@@ -950,6 +939,10 @@ textarea:focus-visible {
 
 .quote-line + .quote-line {
   border-top: 1px solid #cfd2d8;
+}
+
+.quote-line--labor {
+  background: var(--brand-gold-soft);
 }
 
 .quote-line > * {

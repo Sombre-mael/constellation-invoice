@@ -34,7 +34,6 @@ import type {
   LineItem,
   MobilePreviewMode,
   Quote,
-  QuoteStatus,
   QuoteTotals,
   StepDirection,
 } from "@/lib/quote-types";
@@ -48,7 +47,7 @@ const A4_PREVIEW_WIDTH = 720;
 const sections: { id: EditorSection; label: string; shortLabel: string; hint: string }[] = [
   { id: "client", label: "Client & document", shortLabel: "Client", hint: "Coordonnées et objet" },
   { id: "prestations", label: "Prestations", shortLabel: "Services", hint: "Articles et quantités" },
-  { id: "conditions", label: "Conditions", shortLabel: "Conditions", hint: "Taxes, paiement et notes" },
+  { id: "conditions", label: "Exécution & conditions", shortLabel: "Exécution", hint: "Main-d’œuvre, durée et paiement" },
   { id: "emetteur", label: "Constellation", shortLabel: "Émetteur", hint: "Vos informations" },
 ];
 
@@ -72,7 +71,6 @@ function createInitialQuote(today: string, sequence = 1): Quote {
   return {
     id: `draft-${today}`,
     quoteNumber: `DEV-${today.slice(0, 4)}-${String(sequence).padStart(3, "0")}`,
-    status: "Brouillon",
     issueDate: today,
     validUntil: addDays(today, 15),
     currency: "USD",
@@ -83,12 +81,22 @@ function createInitialQuote(today: string, sequence = 1): Quote {
     items: [
       { id: "line-1", description: "", details: "", quantity: 1, unitPrice: 0 },
     ],
+    laborCost: 0,
+    serviceDuration: "",
     discount: 0,
     tax: 0,
     deposit: 0,
     paymentTerms: "",
     notes: "",
     updatedAt: new Date(`${today}T12:00:00`).toISOString(),
+  };
+}
+
+function normalizeQuote(value: Quote): Quote {
+  return {
+    ...value,
+    laborCost: Number.isFinite(value.laborCost) ? value.laborCost : 0,
+    serviceDuration: typeof value.serviceDuration === "string" ? value.serviceDuration : "",
   };
 }
 
@@ -107,7 +115,7 @@ function decodeQuote(value: string): Quote | null {
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Quote;
     if (!parsed?.quoteNumber || !Array.isArray(parsed.items)) return null;
-    return { ...parsed, id: makeId("shared"), status: "Brouillon" };
+    return normalizeQuote({ ...parsed, id: makeId("shared") });
   } catch {
     return null;
   }
@@ -167,13 +175,14 @@ export function QuoteStudio({ today }: { today: string }) {
   const activeIndex = sections.findIndex((section) => section.id === activeSection);
 
   const totals = useMemo<QuoteTotals>(() => {
-    const subtotal = quote.items.reduce((sum, item) => sum + Math.max(0, item.quantity) * Math.max(0, item.unitPrice), 0);
+    const itemsSubtotal = quote.items.reduce((sum, item) => sum + Math.max(0, item.quantity) * Math.max(0, item.unitPrice), 0);
+    const subtotal = itemsSubtotal + Math.max(0, quote.laborCost);
     const discountAmount = subtotal * (Math.max(0, quote.discount) / 100);
     const taxable = subtotal - discountAmount;
     const taxAmount = taxable * (Math.max(0, quote.tax) / 100);
     const total = taxable + taxAmount;
     const depositAmount = total * (Math.max(0, quote.deposit) / 100);
-    return { subtotal, discountAmount, taxAmount, total, depositAmount };
+    return { itemsSubtotal, subtotal, discountAmount, taxAmount, total, depositAmount };
   }, [quote]);
 
   const money = useMemo(() => new Intl.NumberFormat("fr-FR", {
@@ -186,7 +195,7 @@ export function QuoteStudio({ today }: { today: string }) {
       if (cancelled) return;
       try {
         const storedLibrary = localStorage.getItem(LIBRARY_KEY);
-        if (storedLibrary) setSavedQuotes(JSON.parse(storedLibrary) as Quote[]);
+        if (storedLibrary) setSavedQuotes((JSON.parse(storedLibrary) as Quote[]).map(normalizeQuote));
         const sharedValue = window.location.hash.startsWith("#devis=") ? window.location.hash.slice(7) : null;
         const sharedQuote = sharedValue ? decodeQuote(sharedValue) : null;
         const storedCurrent = localStorage.getItem(CURRENT_KEY);
@@ -194,7 +203,7 @@ export function QuoteStudio({ today }: { today: string }) {
           setQuote(sharedQuote);
           showNotice("Devis partagé chargé dans un nouveau brouillon", "success");
         } else if (storedCurrent) {
-          setQuote(JSON.parse(storedCurrent) as Quote);
+          setQuote(normalizeQuote(JSON.parse(storedCurrent) as Quote));
         }
       } catch {
         showNotice("Le brouillon local n’a pas pu être restauré", "neutral");
@@ -306,8 +315,9 @@ export function QuoteStudio({ today }: { today: string }) {
   }
 
   function loadQuote(saved: Quote) {
-    setQuote(saved);
-    localStorage.setItem(CURRENT_KEY, JSON.stringify(saved));
+    const normalized = normalizeQuote(saved);
+    setQuote(normalized);
+    localStorage.setItem(CURRENT_KEY, JSON.stringify(normalized));
     setLibraryOpen(false);
     showNotice(`${saved.quoteNumber} chargé`);
   }
@@ -325,7 +335,6 @@ export function QuoteStudio({ today }: { today: string }) {
     try {
       if (navigator.share) {
         await navigator.share({ title: `Devis ${quote.quoteNumber}`, text, url });
-        if (quote.status === "Brouillon") patchQuote("status", "Envoyé");
         showNotice("Options de partage ouvertes");
         return;
       }
@@ -347,7 +356,6 @@ export function QuoteStudio({ today }: { today: string }) {
           <div className="form-card-heading"><h2>Informations du devis</h2><span>Affichées sur le document</span></div>
           <div className="field-grid">
             <Field label="Numéro du devis"><input value={quote.quoteNumber} onChange={(event) => patchQuote("quoteNumber", event.target.value)} /></Field>
-            <Field label="Statut"><span className="select-wrap"><select value={quote.status} onChange={(event) => patchQuote("status", event.target.value as QuoteStatus)}><option>Brouillon</option><option>Prêt à envoyer</option><option>Envoyé</option><option>Accepté</option></select><ChevronDown size={15} aria-hidden="true" /></span></Field>
             <Field label="Date d’émission"><input type="date" value={quote.issueDate} onChange={(event) => patchQuote("issueDate", event.target.value)} /></Field>
             <Field label="Valable jusqu’au"><input type="date" value={quote.validUntil} onChange={(event) => patchQuote("validUntil", event.target.value)} /></Field>
             <Field label="Objet de la proposition" wide><input placeholder="Ex. Pose de peinture dans trois pièces" value={quote.title} onChange={(event) => patchQuote("title", event.target.value)} /></Field>
@@ -388,13 +396,20 @@ export function QuoteStudio({ today }: { today: string }) {
           </AnimatePresence>
         </div>
         <button className="add-line-button" type="button" onClick={addItem}><Plus size={17} aria-hidden="true" /> Ajouter une prestation</button>
-        <button className="button button--next" type="button" onClick={() => goToSection("conditions")}>Continuer vers les conditions <span>→</span></button>
+        <button className="button button--next" type="button" onClick={() => goToSection("conditions")}>Continuer vers l’exécution <span>→</span></button>
       </div>
     );
 
     if (activeSection === "conditions") return (
       <div className="editor-section">
-        <div className="section-heading"><div><span className="eyebrow">ÉTAPE 03</span><h1 ref={sectionHeadingRef} tabIndex={-1}>Conditions</h1><p>Ajustez les montants et clarifiez les modalités de collaboration.</p></div><span className="section-icon"><Settings2 size={20} aria-hidden="true" /></span></div>
+        <div className="section-heading"><div><span className="eyebrow">ÉTAPE 03</span><h1 ref={sectionHeadingRef} tabIndex={-1}>Exécution & conditions</h1><p>Précisez la main-d’œuvre, la durée et les modalités de collaboration.</p></div><span className="section-icon"><Settings2 size={20} aria-hidden="true" /></span></div>
+        <div className="form-card">
+          <div className="form-card-heading"><h2>Exécution du service</h2><span>Visible sur le devis livré au client</span></div>
+          <div className="field-grid">
+            <Field label="Durée prévue"><input placeholder="Ex. 5 jours ouvrables" value={quote.serviceDuration} onChange={(event) => patchQuote("serviceDuration", event.target.value)} /></Field>
+            <Field label={`Main-d’œuvre (${quote.currency})`}><input type="number" inputMode="decimal" min="0" step="0.01" value={quote.laborCost} onChange={(event) => patchQuote("laborCost", Number(event.target.value))} /></Field>
+          </div>
+        </div>
         <div className="form-card">
           <div className="form-card-heading"><h2>Calculs</h2><span>{money.format(totals.total)} au total</span></div>
           <div className="field-grid field-grid--three">
